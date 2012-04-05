@@ -75,14 +75,24 @@ class CompilerJarFilter extends BaseCompilerFilter
         $pb->add('--js')->add($cleanup[] = $input = tempnam(sys_get_temp_dir(), 'assetic_google_closure_compiler'));
         file_put_contents($input, $asset->getContent());
 
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $cleanup[] = $output = tempnam(sys_get_temp_dir(), 'assetic_google_closure_compiler');
+            $pb->add('--js_output_file')->add($output);
+        }
+
         $proc = $pb->getProcess();
         $code = $proc->run();
+
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $asset->setContent(file_get_contents($output));
+        }  else {
+            $asset->setContent($proc->getOutput());
+        }
+
         array_map('unlink', $cleanup);
 
         if (0 < $code) {
             throw new \RuntimeException($proc->getErrorOutput());
         }
-
-        $asset->setContent($proc->getOutput());
     }
 }
